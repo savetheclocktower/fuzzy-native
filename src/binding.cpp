@@ -7,20 +7,24 @@
 
 using namespace Nan;
 
-#define CHECK(cond, msg)                                                       \
-  if (!(cond)) {                                                               \
-    ThrowTypeError(msg);                                                       \
-    return;                                                                    \
+#define CHECK(cond, msg) \
+  if (!(cond))           \
+  {                      \
+    ThrowTypeError(msg); \
+    return;              \
   }
 
 template <typename T>
-T get_property(const v8::Local<v8::Object> &object, const char *name) {
+T get_property(const v8::Local<v8::Object> &object, const char *name)
+{
   auto prop = Nan::Get(object, Nan::New(name).ToLocalChecked());
-  if (prop.IsEmpty()) {
+  if (prop.IsEmpty())
+  {
     return T();
   }
   Nan::Maybe<T> result = Nan::To<T>(prop.ToLocalChecked());
-  if (result.IsNothing()) {
+  if (result.IsNothing())
+  {
     return T();
   }
   return result.FromJust();
@@ -29,7 +33,8 @@ T get_property(const v8::Local<v8::Object> &object, const char *name) {
 /**
  * This saves one string copy over using v8::String::Utf8Value.
  */
-std::string to_std_string(const v8::Local<v8::String> &v8str) {
+std::string to_std_string(const v8::Local<v8::String> &v8str)
+{
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
   std::string str(v8str->Utf8Length(isolate), ' ');
   v8str->WriteUtf8(isolate, &str[0]);
@@ -37,19 +42,23 @@ std::string to_std_string(const v8::Local<v8::String> &v8str) {
 }
 
 std::string get_string_property(const v8::Local<v8::Object> &object,
-                                const char *name) {
+                                const char *name)
+{
   auto prop =
-    Nan::Get(object, Nan::New(name).ToLocalChecked());
-  if (!prop.IsEmpty()) {
+      Nan::Get(object, Nan::New(name).ToLocalChecked());
+  if (!prop.IsEmpty())
+  {
     auto propLocal = prop.ToLocalChecked();
-    if (propLocal->IsNull() || propLocal->IsUndefined()) {
+    if (propLocal->IsNull() || propLocal->IsUndefined())
+    {
       return std::string("");
     }
-    if (!propLocal->IsString()) {
+    if (!propLocal->IsString())
+    {
       std::string msg =
-        std::string("property ") +
-        name +
-        std::string(" must be a string");
+          std::string("property ") +
+          name +
+          std::string(" must be a string");
       ThrowTypeError(msg.c_str());
     }
 
@@ -60,9 +69,11 @@ std::string get_string_property(const v8::Local<v8::Object> &object,
 
 Persistent<v8::Function> MatcherConstructor;
 
-class Matcher : public ObjectWrap {
+class Matcher : public ObjectWrap
+{
 public:
-  static void Init(v8::Local<v8::Object> exports) {
+  static void Init(v8::Local<v8::Object> exports)
+  {
     // Prepare constructor template
     v8::Local<v8::FunctionTemplate> tpl =
         New<v8::FunctionTemplate>(Matcher::Create);
@@ -81,7 +92,8 @@ public:
     Set(exports, Nan::New("Matcher").ToLocalChecked(), tpl->GetFunction(context).ToLocalChecked());
   }
 
-  static void Create(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+  static void Create(const Nan::FunctionCallbackInfo<v8::Value> &info)
+  {
     CHECK(info.IsConstructCall(), "Use 'new' to construct Matcher");
     auto obj = new Matcher();
     obj->Wrap(info.This());
@@ -89,8 +101,10 @@ public:
     info.GetReturnValue().Set(info.This());
   }
 
-  static void Match(const FunctionCallbackInfo<v8::Value> &info) {
-    if (info.Length() < 1) {
+  static void Match(const FunctionCallbackInfo<v8::Value> &info)
+  {
+    if (info.Length() < 1)
+    {
       Nan::ThrowTypeError("Wrong number of arguments");
       return;
     }
@@ -99,7 +113,8 @@ public:
     std::string query(to_std_string(Nan::To<v8::String>(info[0]).ToLocalChecked()));
 
     MatcherOptions options;
-    if (info.Length() > 1) {
+    if (info.Length() > 1)
+    {
       CHECK(info[1]->IsObject(), "Second argument should be an options object");
       auto options_obj = Nan::To<v8::Object>(info[1]).ToLocalChecked();
       options.case_sensitive = get_property<bool>(options_obj, "caseSensitive");
@@ -122,26 +137,33 @@ public:
         matcher->impl_.findMatches(query, options);
     auto result = New<v8::Array>();
     size_t result_count = 0;
-    for (const auto &match : matches) {
+    for (const auto &match : matches)
+    {
       auto obj = New<v8::Object>();
       Set(obj, idKey, New<v8::Uint32>(match.id));
       Set(obj, scoreKey, New(match.score));
       Set(obj, valueKey, New(*match.value).ToLocalChecked());
-      if (match.matchIndexes != nullptr) {
+
+      v8::Local<v8::Context> context = Nan::GetCurrentContext();
+      if (match.matchIndexes != nullptr)
+      {
         auto array = New<v8::Array>(match.matchIndexes->size());
-        for (size_t i = 0; i < array->Length(); i++) {
-          array->Set(i, New(match.matchIndexes->at(i)));
+        for (size_t i = 0; i < array->Length(); i++)
+        {
+          array->Set(context, i, New(match.matchIndexes->at(i)));
         }
         Set(obj, matchIndexesKey, array);
       }
-      result->Set(result_count++, obj);
+      result->Set(context, result_count++, obj);
     }
     info.GetReturnValue().Set(result);
   }
 
-  static void AddCandidates(const FunctionCallbackInfo<v8::Value> &info) {
+  static void AddCandidates(const FunctionCallbackInfo<v8::Value> &info)
+  {
     auto matcher = Unwrap<Matcher>(info.This());
-    if (info.Length() > 0) {
+    if (info.Length() > 0)
+    {
       CHECK(info[0]->IsArray(), "Expected an array of unsigned 32-bit integer ids as the first argument");
       CHECK(info[1]->IsArray(), "Expected an array of strings as the second argument");
 
@@ -152,30 +174,40 @@ public:
 
       // Create a random permutation so that candidates are shuffled.
       std::vector<size_t> indexes(ids->Length());
-      for (size_t i = 0; i < indexes.size(); i++) {
+      for (size_t i = 0; i < indexes.size(); i++)
+      {
         indexes[i] = i;
-        if (i > 0) {
+        if (i > 0)
+        {
           std::swap(indexes[rand() % i], indexes[i]);
         }
       }
       matcher->impl_.reserve(matcher->impl_.size() + ids->Length());
-      for (auto i: indexes) {
-        auto id_value = ids->Get(i);
+
+      v8::Local<v8::Context> context = Nan::GetCurrentContext();
+      for (auto i : indexes)
+      {
+        auto id_value = ids->Get(context, i).ToLocalChecked();
         CHECK(id_value->IsUint32(), "Expected first array to only contain unsigned 32-bit integer ids");
         auto id = v8::Local<v8::Uint32>::Cast(id_value)->Value();
-        auto value = to_std_string(Nan::To<v8::String>(values->Get(i)).ToLocalChecked());
+        auto value = to_std_string(Nan::To<v8::String>(values->Get(context, i).ToLocalChecked()).ToLocalChecked());
         matcher->impl_.addCandidate(id, value);
       }
     }
   }
 
-  static void RemoveCandidates(const FunctionCallbackInfo<v8::Value> &info) {
+  static void RemoveCandidates(const FunctionCallbackInfo<v8::Value> &info)
+  {
     auto matcher = Unwrap<Matcher>(info.This());
-    if (info.Length() > 0) {
+    if (info.Length() > 0)
+    {
       CHECK(info[0]->IsArray(), "Expected an array of unsigned 32-bit integer ids");
       auto ids = v8::Local<v8::Array>::Cast(info[0]);
-      for (size_t i = 0; i < ids->Length(); i++) {
-        auto id_value = ids->Get(i);
+
+      v8::Local<v8::Context> context = Nan::GetCurrentContext();
+      for (size_t i = 0; i < ids->Length(); i++)
+      {
+        auto id_value = ids->Get(context, i).ToLocalChecked();
         CHECK(id_value->IsUint32(), "Expected array to only contain unsigned 32-bit integer ids");
         auto id = v8::Local<v8::Uint32>::Cast(id_value)->Value();
         matcher->impl_.removeCandidate(id);
@@ -183,7 +215,8 @@ public:
     }
   }
 
-  static void SetCandidates(const FunctionCallbackInfo<v8::Value> &info) {
+  static void SetCandidates(const FunctionCallbackInfo<v8::Value> &info)
+  {
     auto matcher = Unwrap<Matcher>(info.This());
     matcher->impl_.clear();
     AddCandidates(info);
