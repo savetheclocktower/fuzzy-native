@@ -101,7 +101,7 @@ Next, we are going to create a `sync-upstream` branch which is going to contain 
 # Create the branch pointing to the upstream branch.
 $ git checkout -b sync-upstream upstream
 # Rebase all the new commits (descendants of the commit stored in .last-synced-commit) onto the master branch (this may lead to some conflicts).
-$ git rebase --onto master $(cat .last-synced-commit) sync-upstream
+$ git rebase --onto master "$(git show master:.last-synced-commit)" sync-upstream
 ```
 
 Now we have on the `sync-upstream` branch all the new commits from the upstream repo since the last time we synced. We may want to discard some of these commits (for example the ones that modify files that handle building multiple projects, since they only make sense on the upstream repo):
