@@ -228,4 +228,4 @@ private:
 
 void Init(v8::Local<v8::Object> exports) { Matcher::Init(exports); }
 
-NODE_MODULE(addon, Init)
+NAN_MODULE_WORKER_ENABLED(addon, Init)
