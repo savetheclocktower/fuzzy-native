@@ -1,5 +1,6 @@
 #include "MatcherBase.h"
 #include "score_match.h"
+#include "fuzzaldrin_score.h"
 
 #include <algorithm>
 #include <atomic>
@@ -147,14 +148,20 @@ void thread_worker(
       continue;
     }
     if ((bitmask & candidate.bitmask) == bitmask) {
-      float score = score_match(
-        candidate.value.c_str(),
-        candidate.lowercase.c_str(),
-        query.c_str(),
-        query_case.c_str(),
-        options,
-        min_score->load()
-      );
+      float score;
+      if(options.fuzzaldrin) {
+        score = fuzzaldrin_score(candidate.value, query);
+        score = fuzzaldrin_basename_score(candidate.value, query, score);
+      } else {
+        score = score_match(
+          candidate.value.c_str(),
+          candidate.lowercase.c_str(),
+          query.c_str(),
+          query_case.c_str(),
+          options,
+          min_score->load()
+        );
+      }
       if (score > 0) {
         push_heap(
           result,
@@ -195,6 +202,7 @@ vector<MatchResult> MatcherBase::findMatches(const std::string &query,
   matchOptions.smart_case = false;
   matchOptions.max_gap = options.max_gap;
   matchOptions.root_path = options.root_path;
+  matchOptions.fuzzaldrin = options.fuzzaldrin;
 
   string new_query;
   // Ignore all whitespace in the query.
