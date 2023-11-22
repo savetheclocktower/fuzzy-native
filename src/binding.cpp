@@ -124,6 +124,8 @@ public:
       options.max_gap = get_property<int>(options_obj, "maxGap");
       options.record_match_indexes =
           get_property<bool>(options_obj, "recordMatchIndexes");
+      options.fuzzaldrin =
+          get_string_property(options_obj, "algorithm") == "fuzzaldrin";
       options.root_path = get_string_property(options_obj, "rootPath");
     }
 
