@@ -8,6 +8,7 @@ struct MatchOptions {
   bool case_sensitive;
   bool smart_case;
   size_t max_gap;
+  bool fuzzaldrin = false;
   std::string root_path;
 };
 
