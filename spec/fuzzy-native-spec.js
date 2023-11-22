@@ -80,6 +80,32 @@ describe('fuzzy-native', function() {
     expect(result).toEqual([]);
   });
 
+  it('can match strings for alternate scoring', function() {
+    let results = matcher.match('tiatd', {algorithm: 'fuzzaldrin'});
+    const resultsWithScores = () => results.map(result => {
+      return {
+        value: result.value,
+        score: Math.round(result.score * 10000) / 10000
+      };
+    });
+
+    expect(resultsWithScores()).toEqual([
+      {value: '/test/tiatd', score: 0.14},
+      {value: 'thisisatestdir', score: 0.0635},
+      {value: '/////ThisIsATestDir', score: 0.0231},
+      {value: '/this/is/a/test/dir', score: 0.0212},
+    ]);
+
+    // Default (file-based) algorithm
+    results = matcher.match('tiatd');
+    expect(resultsWithScores()).toEqual([
+      {value: '/test/tiatd', score: 0.75},
+      {value: '/this/is/a/test/dir', score: 0.1554},
+      {value: '/////ThisIsATestDir', score: 0.1536},
+      {value: 'thisisatestdir', score: 0.0536},
+    ]);
+  });
+
   it('can do a case-sensitive search', function() {
     var result = matcher.match('abc', {caseSensitive: true});
     expect(values(result)).toEqual([
