@@ -149,7 +149,9 @@ void thread_worker(
     }
     if ((bitmask & candidate.bitmask) == bitmask) {
       float score;
-      if(options.fuzzaldrin) {
+      if(query == "") {
+        score = 1;
+      } else if(options.fuzzaldrin) {
         score = fuzzaldrin_score(candidate.value, query);
         score = fuzzaldrin_basename_score(candidate.value, query, score);
       } else {
