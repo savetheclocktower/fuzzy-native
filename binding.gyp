@@ -17,6 +17,7 @@
       },
       'sources': [
         'src/binding.cpp',
+        'src/fuzzaldrin_score.cpp',
         'src/score_match.cpp',
         'src/MatcherBase.cpp',
       ],
