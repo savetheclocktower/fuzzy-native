@@ -1,31 +1,4 @@
-#include <napi.h>
-#include "MatcherBase.h"
-
-#define CHECK(cond, msg, env)                                  \
-if (!(cond)) {                                                 \
-  Napi::TypeError::New(env, msg).ThrowAsJavaScriptException(); \
-  return env.Null();                                           \
-}
-
-#define CHECK_VOID(cond, msg, env)                             \
-if (!(cond)) {                                                 \
-  Napi::TypeError::New(env, msg).ThrowAsJavaScriptException(); \
-  return;                                                      \
-}
-
-class Matcher : public Napi::ObjectWrap<Matcher> {
-public:
-  static void Init(Napi::Env, Napi::Object exports);
-  Matcher(const Napi::CallbackInfo& info);
-
-private:
-  Napi::Value Match(const Napi::CallbackInfo& info);
-  void AddCandidates(const Napi::CallbackInfo& info);
-  void RemoveCandidates(const Napi::CallbackInfo& info);
-  void SetCandidates(const Napi::CallbackInfo& info);
-
-  MatcherBase _impl;
-};
+#include "binding.hpp"
 
 Matcher::Matcher(const Napi::CallbackInfo& info): Napi::ObjectWrap<Matcher>(info) {
   auto env = info.Env();
@@ -38,6 +11,14 @@ Matcher::Matcher(const Napi::CallbackInfo& info): Napi::ObjectWrap<Matcher>(info
 }
 
 void Matcher::Init(Napi::Env env, Napi::Object exports) {
+  // We currently don't need to define any “addon data” here because this class
+  // is self-contained and we construct a new copy of it every time we hit
+  // `Matcher::Init`.
+  //
+  // If we exposed any class methods that created new instances, we'd want to
+  // store a reference to the current environment's version of `func` as was
+  // done in `superstring` — which we could do via the `SetInstanceData` method
+  // on `Napi::Env`.
   Napi::Function func = DefineClass(env, "Matcher", {
     InstanceMethod<&Matcher::Match>("match", napi_default_method),
     InstanceMethod<&Matcher::AddCandidates>("addCandidates", napi_default_method),
@@ -61,6 +42,9 @@ Napi::Value Matcher::Match(const Napi::CallbackInfo& info) {
   if (info.Length() > 1) {
     CHECK(info[1].IsObject(), "Second argument should be an options object", env);
     auto obj = info[1].As<Napi::Object>();
+
+    // Instead of throwing an exception whenever an option has a value of a
+    // type we don't expect, it's better just to ignore it.
     if (obj.Get("caseSensitive").IsBoolean()) {
       options.case_sensitive = obj.Get("caseSensitive").As<Napi::Boolean>();
     }
@@ -81,6 +65,8 @@ Napi::Value Matcher::Match(const Napi::CallbackInfo& info) {
     }
     if (obj.Get("algorithm").IsString()) {
       std::string algorithm(obj.Get("algorithm").As<Napi::String>());
+      // `fuzzaldrin` opts into the fuzzaldrin algorithm; all other values are
+      // ignored.
       if (algorithm == "fuzzaldrin") {
         options.fuzzaldrin = true;
       }
@@ -90,27 +76,29 @@ Napi::Value Matcher::Match(const Napi::CallbackInfo& info) {
     }
   }
 
-  auto idKey = Napi::String::New(env, "id");
-  auto valueKey = Napi::String::New(env, "value");
-  auto scoreKey = Napi::String::New(env, "score");
-  auto matchIndexesKey = Napi::String::New(env, "matchIndexes");
+  // auto idKey = Napi::String::New(env, "id");
+  // auto valueKey = Napi::String::New(env, "value");
+  // auto scoreKey = Napi::String::New(env, "score");
+  // auto matchIndexesKey = Napi::String::New(env, "matchIndexes");
 
   std::vector<MatchResult> matches = _impl.findMatches(query, options);
 
   auto result = Napi::Array::New(env);
   size_t result_count = 0;
+
+  // Populate our JavaScript array with each match.
   for (const auto &match : matches) {
     auto obj = Napi::Object::New(env);
-    obj.Set(idKey, Napi::Number::New(env, match.id));
-    obj.Set(scoreKey, Napi::Number::New(env, match.score));
-    obj.Set(valueKey, Napi::String::New(env, *match.value));
+    obj.Set("id", Napi::Number::New(env, match.id));
+    obj.Set("score", Napi::Number::New(env, match.score));
+    obj.Set("value", Napi::String::New(env, *match.value));
 
     if (match.matchIndexes != nullptr) {
       auto array = Napi::Array::New(env, match.matchIndexes->size());
       for (size_t i = 0; i < array.Length(); i++) {
         array.Set(i, Napi::Number::New(env, match.matchIndexes->at(i)));
       }
-      obj.Set(matchIndexesKey, array);
+      obj.Set("matchIndexes", array);
     }
     result.Set(result_count++, obj);
   }
