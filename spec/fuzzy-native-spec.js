@@ -290,9 +290,9 @@ describe('fuzzy-native', function() {
   });
 
   it('ensures that the ids array and the values array are the same length when adding candidates', () => {
-    const expectedMessage = 'Expected ids array and values array to have the same length';
-    expect(() => matcher.addCandidates([1, 2, 3], ["a", "b"])).toThrow(expectedMessage)
-    expect(() => matcher.addCandidates([1, 2], ["a", "b", "c"])).toThrow(expectedMessage)
+    const expectedMessage = 'Expected IDs array and values array to have the same length';
+    expect(() => matcher.addCandidates([1, 2, 3], ["a", "b"])).toThrowError(TypeError, expectedMessage)
+    expect(() => matcher.addCandidates([1, 2], ["a", "b", "c"])).toThrowError(TypeError, expectedMessage)
   });
 
   it('returns match results for duplicate values with different ids', () => {
@@ -326,10 +326,14 @@ describe('fuzzy-native', function() {
     ]);
   });
 
-  it('returns exact matches than normalized path separator matches', () => {
+  it('returns exact matches over normalized path separator matches', () => {
     matcher.setCandidates(
       [0, 1, 2],
-      ['/path1/path2/path3/zzz', '/path1/path2/path3/zzz_ooo', '/path1/path2/path3/zzz/ooo']
+      [
+        '/path1/path2/path3/zzz',
+        '/path1/path2/path3/zzz_ooo',
+        '/path1/path2/path3/zzz/ooo'
+      ]
     );
 
     expect(

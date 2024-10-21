@@ -4,7 +4,7 @@
   "description": "Native C++ implementation of a fuzzy string matcher.",
   "main": "lib/main.js",
   "scripts": {
-    "test": "jasmine-node --captureExceptions spec"
+    "test": "jasmine --random=false spec/*-spec.js"
   },
   "files": [
     "binding.gyp",
@@ -24,7 +24,7 @@
     "node-addon-api": "^8.2.1"
   },
   "devDependencies": {
-    "jasmine-node": "^1.14.5",
+    "jasmine": "^5.4.0",
     "rimraf": "^2.5.2"
   }
 }
