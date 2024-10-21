@@ -2,7 +2,12 @@
   'targets': [
     {
       'target_name': 'fuzzy-native',
-      'include_dirs': [ '<!(node -e "require(\'nan\')")' ],
+      'include_dirs': [
+          "<!(node -p \"require('node-addon-api').include_dir\")",
+      ],
+      'defines': [
+        "NAPI_DISABLE_CPP_EXCEPTIONS"
+      ],
       'cflags': [
         '-std=c++17',
         '-O3',

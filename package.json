@@ -21,7 +21,7 @@
   "repository": "https://github.com/pulsar-edit/fuzzy-native",
   "license": "MIT",
   "dependencies": {
-    "nan": "^2.18.0"
+    "node-addon-api": "^8.2.1"
   },
   "devDependencies": {
     "jasmine-node": "^1.14.5",
