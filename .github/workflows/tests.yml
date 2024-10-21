@@ -2,7 +2,7 @@ name: Tests
 on:
   pull_request:
   push:
-    branches: ['master']
+    branches: ['master', 'n-api']
 
 jobs:
   test:
@@ -10,20 +10,20 @@ jobs:
     if: |
       !startsWith(github.event.pull_request.title, '[skip-ci]') &&
       !startsWith(github.event.pull_request.title, '[skip-package-ci]')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout the latest code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup node
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
-        node-version: 16
+        node-version: 20
 
     - name: Install Python setuptools
       run: python3 -m pip install setuptools
 
-    - name: Install Dependencies
+    - name: Install dependencies
       run: npm install
 
     - name: Run tests
